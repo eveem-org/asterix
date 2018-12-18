@@ -1,7 +1,26 @@
-//var fs = require("fs");
-//functions = JSON.parse(fs.readFileSync("small.json")).functions
+/*
+
+    Script for finding self-destructs in a contract.
+
+*/
 
 functions = JSON.parse(contract).functions;
+
+// alternatively, uncomment below, and run the script directly
+// from terminal, by calling `node showme.js`
+
+//var fs = require("fs");
+//functions = JSON.parse(fs.readFileSync("kitties.json")).functions
+
+/*
+
+    For more information about the Eveem.org API, and the trace format,
+    check out showme example here:
+    https://github.com/kolinko/showmewhatyougot
+
+    The stuff below is a port of fragments of the `showme` demo.
+
+*/
 
 /*
 
@@ -76,25 +95,36 @@ function walk_trace(trace, f, knows_true=null) {
 function get_caller_cond(condition) {
 	/*
     #  checks if the condition has this format:
-    #  (EQ (MASK_SHL, 160, 0, 0, 'CALLER'), (STORAGE, size, offset, stor_num))
+    #  (EQ (MASK_SHL, 160, 0, 0, 'CALLER'), something)
 
     #  if it does, returns the storage data
     #
-    #  also, if condition is IS_ZERO(EQ ...), it turns it into just (EQ ...)
-    #  -- technically not correct, but this is a hackathon project, should be good enough :)
+
+    #  it doesn't catch conditions like `require stor0[caller].0.uint8`
+    #  as in, for example 0x0370840bCdF2Cb450A18f8eD89982593503f4856
     */
 
     condition = simplify(condition)
 
-    if (opcode(condition) != 'EQ')
+    if (opcode(condition) != 'EQ') {
         return null
+    }
 
-    if (condition[1].toString() == ['MASK_SHL', 160, 0, 0, 'CALLER'].toString())
+    if (condition[1].toString() == ['MASK_SHL', 160, 0, 0, 'CALLER'].toString()) {
         stor = condition[2]
-    else if (condition[2].toString() == ['MASK_SHL', 160, 0, 0, 'CALLER'].toString())
+    }
+    else if (condition[2].toString() == ['MASK_SHL', 160, 0, 0, 'CALLER'].toString()){
         stor = condition[1]
-    else
+    }
+    else if (condition[1].toString() == 'CALLER'){
+        stor = condition[2]
+    }
+    else if (condition[2].toString() == 'CALLER'){
+        stor = condition[1]
+    }
+    else {
         return null
+    }
 
     if (opcode(stor) == 'MASK_SHL') {
     	stor = stor[4]
@@ -112,13 +142,6 @@ function find_destructs(line, knows_true) {
     if (opcode(line) != 'SELFDESTRUCT') //'SELFDESTRUCT':
         return Array()
 
-    /*receiver = line[1]
-
-    if (receiver.toString == ('MASK_SHL', 160, 0, 0, 'CALLER').toString):
-        receiver = 'anyone'
-    else if (opcode(receiver) != 'STORAGE' || len(receiver) > 4):
-        receiver = 'unknown'*/
-
     callers = Array()
     for (cond of knows_true) {
     	cond = simplify(cond)
@@ -132,10 +155,7 @@ function find_destructs(line, knows_true) {
     if (callers.length == 0) 
     	return [ knows_true ]
    	else
-   		return Array() //[ knows_true ]
-/*        callers = ['anyone']
-
-    return callers*/
+   		return Array() 
 }
 
 
@@ -143,8 +163,6 @@ function find_destructs(line, knows_true) {
 function test(exp, knows_true) {
     return [ [opcode(exp), knows_true] ]
 }
-
-//functions = trace.functions
 
 
 output = Array()
@@ -157,64 +175,10 @@ for (func of functions) {
 		console.log(res)
 		output.push(JSON.stringify({
 			'func_name': func.name,
-//			'print': func.print,
+			'print': func.print,
 			'res': res
 		}))
 	}
 }
 
-//res = walk_trace(trace, find_destructs)
-
-//console.log('hello')
-//console.log(typeof res)
-//console.log(res)
-
-//if (output.length > 0) {
-	return output //JSON.stringify(output)
-//} else {
-//	return null
-//}
-
-//console.log(['a','b'].extend(['c', 'd']))
-
-//console.log(['a','b','c'].toString() == ['a','b','c'].toString())
-
-//return JSON.parse(fs)[0].hash
-
-/*
-def walk_trace(trace, f=print, knows_true=None):
-    '''
-        
-        walks the trace, calling function f(line, knows_true) for every line
-        knows_true is a list of 'if' conditions that had to be met to reach a given
-        line
-
-    '''
-    res = []
-    knows_true = knows_true or []
-
-    for idx, line in enumerate(trace):
-        found = f(line, knows_true)
-
-        if found is not None:
-            res.append(found)
-
-        if opcode(line) == 'IF':
-            condition, if_true, if_false = line[1:]
-            res.extend(walk_trace(if_true, f, knows_true + [condition]))
-            res.extend(walk_trace(if_false, f, knows_true + [is_zero(condition)]))
-
-            assert idx == len(trace)-1, trace # IFs always end the trace tree
-            break
-
-        if opcode(line) == 'WHILE':
-            condition, while_trace = line[1:]
-            res.extend(walk_trace(while_trace, f, knows_true + [is_zero(condition)]))
-            continue
-
-        if opcode(line) == 'LOOP':
-            loop_trace, label = line[1:]
-            res.extend(walk_trace(loop_trace, f, knows_true))
-
-    return res
-*/
+return output

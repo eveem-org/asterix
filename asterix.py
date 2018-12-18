@@ -13,91 +13,6 @@ dataset_ref = client.dataset(dataset_id)
 table_ref = dataset_ref.table('contracts')
 table = client.get_table(table_ref)
 
-def create_table():
-    schema = [
-        bigquery.SchemaField('addr', 'STRING', mode='REQUIRED'),
-        bigquery.SchemaField('ver', 'STRING', mode='REQUIRED'),
-        bigquery.SchemaField('contract', 'STRING', mode='REQUIRED'),
-    ]
-
-    table = bigquery.Table(table_ref, schema=schema)
-    table = client.create_table(table)  # API request
-
-    assert table.table_id == 'contracts', table.table_id
-
-def cached_contracts():
-    path = '../panoramix/cache_pan/'
-
-    for dname in os.listdir(path):
-        if not os.path.isdir(path+dname):
-            continue
-        for fname in os.listdir(path+dname):
-            if '.json' not in fname:
-                continue
-
-            yield path+dname+'/'+fname
-
-def insert_row():
-    path = '../cache_pan/'
-
-    count = 0
-    count_addr = 0
-
-    for dname in os.listdir(path):
-        if not os.path.isdir(path+dname):
-            continue
-
-        rows = []
-
-        for fname in os.listdir(path+dname):
-            if '.json' not in fname:
-                continue
-
-            count_addr += 1
-
-            with open(path+dname+'/'+fname) as f:
-                try:
-                    data = json.loads(f.read())
-                except:
-                    print(f' {addr} bad data')
-                    continue
-
-                addr = data['addr']
-
-                s = json.dumps(data)
-
-                if len(s) > 1048000:
-                    print(f' {addr} too big')
-                    continue
-
-                row = {
-                    'addr': addr,
-                    'ver': data['ver'],
-                    'contract': json.dumps(data)
-                }
-
-                rows.append(row)
-
-                print(f' {addr}')
-
-        count += 1
-        print(f'inserting {dname} (batch #{count}; sum ctx:{count_addr})')
-        if len(rows) == 0:
-            continue
-
-        errors = client.insert_rows(table, rows)  # API request
-        if errors != []:
-            print(errors)
-
-print('hello')
-#insert_row()
-
-#exit()
-
-#create_table()
-
-#insert_row()
-#exit()
 
 def select_rows():
     query_job = client.query(
@@ -113,29 +28,38 @@ def select_rows():
     for row in results:
         print(row)
 
-def udf_test():
+def find_contracts():
     with open('showme.js') as f:
         script = f.read()
 
     query_job = client.query(
         '''
-        create temp function get_hash(contract STRING) 
+        create temp function showme(contract STRING) 
         returns ARRAY<STRING>
         LANGUAGE js AS 
             """
             '''+script+'''
             """;
 
-        SELECT addr FROM eveem.contracts where ARRAY_LENGTH(get_hash(contract)) > 0
+        SELECT addr, showme(contract) as a FROM `showme-1389.eveem.contracts` where ARRAY_LENGTH(showme(contract)) > 0
         ''')
 
     results = query_job.result()  # Waits for job to complete.
 
     for row in results:
-        print(row)
+        print(row[0])
+#        print(row[1])
+        for r in row[1]:
+            d = json.loads(r)
+            print(d['func_name'])
+            print(d['print'])
+            print(d['res'])
+            print()
+        print()
+#        print(row[2])
 
 
-udf_test()
+find_contracts()
 
 #insert_row()
 
@@ -156,7 +80,6 @@ results = query_job.result()  # Waits for job to complete.
 
 for row in results:
     print(row)
-
 
 
 '''

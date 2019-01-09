@@ -1,13 +1,13 @@
 # About
 
-An example script finding self-destructs in Eveem.org contract sources published on BigQuery
+An example script finding self-destructs in [Eveem.org](http://www.eveem.org/) contract sources published on BigQuery
 
 The code has just two simple files:
 
 - **asterix.py** - the main execution script
 - **showme.js** - the analyser function for BigQuery
 
-Both are highly commented, so hopefully you'll understand what's going on. If you don't - fill in an Issue in this repo.
+Both are highly commented, so hopefully you'll understand what's going on. If you don't - [fill in an Issue](https://github.com/kolinko/asterix/issues/new) in this repo.
 
 # Usage
 

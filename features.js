@@ -87,8 +87,8 @@ functions = JSON.parse(contract).functions;
 function find_features(line, knows_true, remainder) {
 
     if (opcode(line) == 'DELEGATE') {
-        return [['delegate '+line[3].toString()],
-                ['delegate '+line[2].toString()]]
+        return [['delegate '+line[3].toString(),
+                'delegate '+line[2].toString()]]
 
     }
 
@@ -97,8 +97,8 @@ function find_features(line, knows_true, remainder) {
     }
 
     if (opcode(line) == 'CREATE') {
-        return [['create code '+line[2].toString()],
-                 ['create funded '+(line[1] == 0?'no':'yes')]]
+        return [['create code '+line[2].toString(),
+                 'create funded '+(line[1] == 0?'no':'yes')]]
     }
 
     if (opcode(line) == 'CALL') {
@@ -110,7 +110,7 @@ function find_features(line, knows_true, remainder) {
         params = line[5]
 
 
-        res = [
+        var res = [
             'value ' + wei,
             'gas '+ gas.toString(),
             'addr_from_function_param '+addr.toString().includes('cd'),
@@ -126,11 +126,21 @@ function find_features(line, knows_true, remainder) {
 
         if (wei.includes('-1') && wei.includes('MUL')) {
             res.push('value_has_SUB yes')
-        } else {
+            res.push('value_has_MUL no')
+
+        } else if (!wei.includes('-1') && wei.includes('MUL')) {
+            res.push('value_has_SUB no')
+
             res.push('value_has_MUL yes')
+        } else {
+            res.push('value_has_SUB no')
+
+            res.push('value_has_MUL no')
+
+
         }
 
-        return res
+        return [res]
 
 
     }
@@ -181,10 +191,9 @@ for (func of functions) {
 
         console.log(res)
 
-
         output.push(JSON.stringify({
             'func_name': func.name,
-            'print': func.print,
+//            'print': func.print,
             'traits': res
         }))
     }

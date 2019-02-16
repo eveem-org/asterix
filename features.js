@@ -75,13 +75,13 @@ function walk_trace(trace, f, knows_true) {
     return res
 }
 
-//functions = JSON.parse(contract).functions;
+functions = JSON.parse(contract).functions;
 
 // alternatively, uncomment below, and run the script directly
 // from terminal, by calling `node showme.js`
 
-var fs = require("fs");
-functions = JSON.parse(fs.readFileSync("test.json")).functions
+//var fs = require("fs");
+//functions = JSON.parse(fs.readFileSync("test.json")).functions
 
 
 function find_features(line, knows_true, remainder) {
